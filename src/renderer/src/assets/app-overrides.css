@@ -1,0 +1,117 @@
+/* App shell: sidebar + content */
+.ai11y-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--pf-t--global--background--color--secondary--default);
+}
+
+/* Draggable titlebar region — clears macOS traffic lights */
+.ai11y-titlebar-drag {
+  height: 50px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+/* Icon-only sidebar */
+.ai11y-sidebar {
+  width: 80px;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--pf-t--global--border--color--default);
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+.ai11y-sidebar .pf-v6-c-nav__link {
+  padding-inline: 0;
+  justify-content: center;
+}
+
+/* Hide label text — icon-only sidebar */
+.ai11y-sidebar .pf-v6-c-nav__link-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Top bar header — doubles as window drag region, inline with traffic lights */
+.ai11y-topbar {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  flex-shrink: 0;
+  padding: 0 var(--pf-t--global--spacer--lg);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  -webkit-app-region: drag;
+}
+
+/* Toolbars: add bottom border for visual separation */
+.ai11y-page-content > .pf-v6-c-toolbar {
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+/* Full-height editor panels */
+.ai11y-editor-panel {
+  flex: 1 1 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Fixed-height console */
+.ai11y-console {
+  height: 192px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Full-height page content */
+.ai11y-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* File tree sidebar in IDE */
+.ai11y-file-tree {
+  width: 208px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--pf-t--global--border--color--default);
+}
+
+/* Violations panel in browser auditor */
+.ai11y-violations-panel {
+  width: 384px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--pf-t--global--border--color--default);
+}
+
+/* Code fix panel height */
+.ai11y-codefix-panel {
+  height: 256px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Empathy viewer placeholder styling */
+.ai11y-empathy-placeholder {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
+
+.ai11y-empathy-titlebar {
+  background-color: var(--pf-t--global--background--color--tertiary--default);
+}
+
+.ai11y-empathy-skeleton {
+  background-color: var(--pf-t--global--background--color--tertiary--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
