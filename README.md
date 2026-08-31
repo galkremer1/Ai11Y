@@ -40,3 +40,7 @@ xattr -cr /path/to/ai11y.app
 ```
 
 For development builds launched from the terminal, you may also need to grant Accessibility permissions under **System Settings > Privacy & Security > Accessibility** to your terminal app (Terminal, iTerm2, etc.).
+
+## Team members
+
+https://github.com/galkremer1
