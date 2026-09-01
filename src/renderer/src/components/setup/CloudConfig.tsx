@@ -1,23 +1,32 @@
-import { Form, FormGroup, TextInput, FormSelect, FormSelectOption } from '@patternfly/react-core'
-import type { CloudProvider, LLMSettings } from '../../types/settings'
+import {
+  Form,
+  FormGroup,
+  TextInput,
+  FormSelect,
+  FormSelectOption,
+} from "@patternfly/react-core";
+import type {
+  CloudProvider,
+  LLMSettings,
+} from "@shared/schemas/settings.schemas";
 
 interface CloudConfigProps {
-  settings: LLMSettings
-  onChange: (settings: LLMSettings) => void
+  settings: LLMSettings;
+  onChange: (settings: LLMSettings) => void;
 }
 
 const providers: { value: CloudProvider; label: string }[] = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'groq', label: 'Groq' },
-  { value: 'custom', label: 'Custom OpenAI-Compatible' }
-]
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "groq", label: "Groq" },
+  { value: "custom", label: "Custom OpenAI-Compatible" },
+];
 
 export function CloudConfig({ settings, onChange }: CloudConfigProps) {
-  const cloud = settings.cloud
+  const cloud = settings.cloud;
 
   const update = (partial: Partial<typeof cloud>) =>
-    onChange({ ...settings, cloud: { ...cloud, ...partial } })
+    onChange({ ...settings, cloud: { ...cloud, ...partial } });
 
   return (
     <Form>
@@ -44,12 +53,12 @@ export function CloudConfig({ settings, onChange }: CloudConfigProps) {
         />
       </FormGroup>
 
-      {cloud.provider === 'custom' && (
+      {cloud.provider === "custom" && (
         <FormGroup label="Base URL" fieldId="cloud-base-url">
           <TextInput
             id="cloud-base-url"
             type="url"
-            value={cloud.baseURL ?? ''}
+            value={cloud.baseURL ?? ""}
             onChange={(_e, value) => update({ baseURL: value })}
             placeholder="https://api.example.com/v1"
           />
@@ -65,5 +74,5 @@ export function CloudConfig({ settings, onChange }: CloudConfigProps) {
         />
       </FormGroup>
     </Form>
-  )
+  );
 }

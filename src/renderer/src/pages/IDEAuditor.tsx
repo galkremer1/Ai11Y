@@ -14,16 +14,16 @@ import { FileTree } from "../components/ide/FileTree";
 import { CodeEditor } from "../components/ide/CodeEditor";
 import { DiffViewer } from "../components/ide/DiffViewer";
 import { A11yConsole } from "../components/ide/A11yConsole";
-import { mockEslintErrors } from "../mocks/eslint-errors";
-import { originalCode, fixedCode } from "../mocks/sample-code";
-import { useIpc } from "../hooks/useIpc";
+import { mockEslintErrors } from "@shared/mocks/mock-eslint";
+import { originalCode, fixedCode } from "@shared/mocks/mock-sample-code";
+import { useIdeServices } from "../hooks/useIdeServices";
 
 interface IDEAuditorProps {
   title: string;
 }
 
 export function IDEAuditor({ title }: IDEAuditorProps) {
-  const { selectDirectory } = useIpc();
+  const { selectDirectory } = useIdeServices();
   const [code, setCode] = useState(originalCode);
   const [showDiff, setShowDiff] = useState(false);
   const [directory, setDirectory] = useState<string | null>(null);

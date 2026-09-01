@@ -25,7 +25,7 @@ function LoginForm() {
 }
 
 export default LoginForm;
-`
+`;
 
 export const fixedCode = `import React from 'react';
 
@@ -58,4 +58,4 @@ function LoginForm() {
 }
 
 export default LoginForm;
-`
+`;

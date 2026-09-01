@@ -1,7 +1,7 @@
-import type { IpcApi } from '../renderer/src/types/ipc'
+import type { IpcApi } from "../shared/types/ipc-api";
 
 declare global {
   interface Window {
-    api: IpcApi
+    api: IpcApi;
   }
 }

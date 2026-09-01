@@ -1,5 +1,5 @@
 import { Form, FormGroup, TextInput } from "@patternfly/react-core";
-import type { LLMSettings } from "../../types/settings";
+import type { LLMSettings } from "@shared/schemas/settings.schemas";
 
 interface LocalConfigProps {
   settings: LLMSettings;

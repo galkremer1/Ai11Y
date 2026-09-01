@@ -14,7 +14,7 @@ import { EmpathyViewer } from "../components/browser/EmpathyViewer";
 import { EmpathyControls } from "../components/browser/EmpathyControls";
 import { AxeViolations } from "../components/browser/AxeViolations";
 import { CodeFix } from "../components/browser/CodeFix";
-import { mockAxeViolations } from "../mocks/axe-violations";
+import { mockAxeViolations } from "@shared/mocks/mock-axe";
 
 interface BrowserAuditorProps {
   title: string;

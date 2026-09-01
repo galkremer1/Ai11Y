@@ -1,19 +1,8 @@
 import { safeStorage } from "electron";
+import type { LLMSettings } from "../shared/schemas/settings.schemas";
 
 interface StoreSchema {
-  settings: {
-    mode: string;
-    cloud: {
-      provider: string;
-      apiKey: string;
-      baseURL?: string;
-      modelName: string;
-    };
-    local: {
-      baseURL: string;
-      modelName: string;
-    };
-  };
+  settings: LLMSettings;
 }
 
 const defaults: StoreSchema = {
@@ -41,7 +30,7 @@ async function getStore() {
   return storeInstance;
 }
 
-export async function getSettings(): Promise<StoreSchema["settings"]> {
+export async function getSettings(): Promise<LLMSettings> {
   const store = await getStore();
   const settings = store.get("settings");
   if (settings.cloud.apiKey && safeStorage.isEncryptionAvailable()) {
@@ -57,9 +46,7 @@ export async function getSettings(): Promise<StoreSchema["settings"]> {
   return settings;
 }
 
-export async function saveSettings(
-  settings: StoreSchema["settings"],
-): Promise<void> {
+export async function saveSettings(settings: LLMSettings): Promise<void> {
   const store = await getStore();
   let apiKey = settings.cloud.apiKey;
   if (apiKey && safeStorage.isEncryptionAvailable()) {

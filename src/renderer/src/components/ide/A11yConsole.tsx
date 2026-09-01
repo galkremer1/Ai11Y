@@ -6,31 +6,45 @@ import {
   DataListCell,
   Label,
   Split,
-  SplitItem
-} from '@patternfly/react-core'
-import ExclamationCircleIcon from '@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon'
-import ExclamationTriangleIcon from '@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon'
-import type { EslintError } from '../../mocks/eslint-errors'
+  SplitItem,
+} from "@patternfly/react-core";
+import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
+import ExclamationTriangleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon";
+import type { EslintError } from "@shared/schemas/eslint.schemas";
 
 interface A11yConsoleProps {
-  errors: EslintError[]
+  errors: EslintError[];
 }
 
 export function A11yConsole({ errors }: A11yConsoleProps) {
-  const errorCount = errors.filter((e) => e.severity === 'error').length
-  const warnCount = errors.filter((e) => e.severity === 'warning').length
+  const errorCount = errors.filter((e) => e.severity === "error").length;
+  const warnCount = errors.filter((e) => e.severity === "warning").length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        height: "100%",
+      }}
+    >
       <Split
         style={{
-          padding: 'var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md)',
-          borderBottom: '1px solid var(--pf-t--global--border--color--default)'
+          padding:
+            "var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md)",
+          borderBottom: "1px solid var(--pf-t--global--border--color--default)",
         }}
         hasGutter
       >
         <SplitItem>
-          <strong style={{ fontSize: 'var(--pf-t--global--font--size--xs)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <strong
+            style={{
+              fontSize: "var(--pf-t--global--font--size--xs)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
             Problems
           </strong>
         </SplitItem>
@@ -45,7 +59,7 @@ export function A11yConsole({ errors }: A11yConsoleProps) {
           </Label>
         </SplitItem>
       </Split>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
         <DataList aria-label="Accessibility problems" isCompact>
           {errors.map((err, i) => (
             <DataListItem key={i} id={`error-${i}`}>
@@ -53,7 +67,7 @@ export function A11yConsole({ errors }: A11yConsoleProps) {
                 <DataListItemCells
                   dataListCells={[
                     <DataListCell key="icon" isIcon width={1}>
-                      {err.severity === 'error' ? (
+                      {err.severity === "error" ? (
                         <ExclamationCircleIcon color="var(--pf-t--global--color--status--danger--default)" />
                       ) : (
                         <ExclamationTriangleIcon color="var(--pf-t--global--color--status--warning--default)" />
@@ -61,10 +75,14 @@ export function A11yConsole({ errors }: A11yConsoleProps) {
                     </DataListCell>,
                     <DataListCell key="content" width={5}>
                       <div>{err.message}</div>
-                      <small style={{ color: 'var(--pf-t--global--text--color--subtle)' }}>
+                      <small
+                        style={{
+                          color: "var(--pf-t--global--text--color--subtle)",
+                        }}
+                      >
                         {err.file}:{err.line}:{err.column} — {err.ruleId}
                       </small>
-                    </DataListCell>
+                    </DataListCell>,
                   ]}
                 />
               </DataListItemRow>
@@ -73,5 +91,5 @@ export function A11yConsole({ errors }: A11yConsoleProps) {
         </DataList>
       </div>
     </div>
-  )
+  );
 }

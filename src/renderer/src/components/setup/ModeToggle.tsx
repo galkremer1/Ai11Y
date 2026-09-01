@@ -1,15 +1,19 @@
-import { FormGroup, ToggleGroup, ToggleGroupItem } from '@patternfly/react-core'
-import type { LLMMode } from '../../types/settings'
+import {
+  FormGroup,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@patternfly/react-core";
+import type { LLMMode } from "@shared/schemas/settings.schemas";
 
 interface ModeToggleProps {
-  mode: LLMMode
-  onChange: (mode: LLMMode) => void
+  mode: LLMMode;
+  onChange: (mode: LLMMode) => void;
 }
 
 const options: { value: LLMMode; label: string }[] = [
-  { value: 'cloud', label: 'Cloud API' },
-  { value: 'local', label: 'Local Ollama' }
-]
+  { value: "cloud", label: "Cloud API" },
+  { value: "local", label: "Local Ollama" },
+];
 
 export function ModeToggle({ mode, onChange }: ModeToggleProps) {
   return (
@@ -26,5 +30,5 @@ export function ModeToggle({ mode, onChange }: ModeToggleProps) {
         ))}
       </ToggleGroup>
     </FormGroup>
-  )
+  );
 }
