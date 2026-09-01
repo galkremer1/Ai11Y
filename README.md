@@ -44,3 +44,4 @@ For development builds launched from the terminal, you may also need to grant Ac
 ## Team members
 
 https://github.com/galkremer1
+https://github.com/johnson2500
