@@ -43,7 +43,7 @@ For development builds launched from the terminal, you may also need to grant Ac
 
 ## Team members
 
-https://github.com/galkremer1
-https://github.com/johnson2500
-https://github.com/LilyLinh
-https://github.com/adamviktora
+- https://github.com/galkremer1
+- https://github.com/johnson2500
+- https://github.com/LilyLinh
+- https://github.com/adamviktora
