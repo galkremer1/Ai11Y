@@ -3,8 +3,8 @@ import {
   Card,
   CardTitle,
   CardBody,
-  ActionGroup,
   Button,
+  Flex,
 } from "@patternfly/react-core";
 import { TopBar } from "../components/layout/TopBar";
 import { ModeToggle } from "../components/setup/ModeToggle";
@@ -64,14 +64,12 @@ export function Setup({ title }: SetupProps) {
               )}
             </div>
 
-            <ActionGroup
-              style={{ marginTop: "var(--pf-t--global--spacer--lg)" }}
-            >
+            <Flex style={{ marginTop: "var(--pf-t--global--spacer--lg)" }}>
               <Button variant="secondary" onClick={handleSave}>
                 {saved ? "Saved!" : "Save Settings"}
               </Button>
               <ConnectionTest settings={settings} />
-            </ActionGroup>
+            </Flex>
           </CardBody>
         </Card>
       </div>
