@@ -6,7 +6,7 @@ AI-powered desktop accessibility auditor. Scans web pages and source code for WC
 
 - **IDE Auditor** — Open a project directory, view accessibility lint errors inline, and accept AI-generated code fixes via a diff viewer.
 - **Browser Auditor** — Enter a URL, run axe-core analysis, preview the page through vision impairment filters (protanopia, deuteranopia, etc.), and get AI-corrected markup.
-- **Setup** — Switch between cloud API providers (OpenAI, Anthropic, Groq) or a local Ollama instance for fully offline operation.
+- **Setup** — Switch between cloud API providers (OpenAI, Anthropic, Grok) or a local Ollama instance for fully offline operation.
 
 ## Tech Stack
 
@@ -47,3 +47,4 @@ https://github.com/galkremer1
 https://github.com/johnson2500
 https://github.com/LilyLinh
 https://github.com/sussen-redhat
+https://github.com/adamviktora
