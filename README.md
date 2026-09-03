@@ -48,3 +48,4 @@ For development builds launched from the terminal, you may also need to grant Ac
 - https://github.com/LilyLinh
 - https://github.com/adamviktora
 - https://github.com/sussen-redhat
+- https://github.com/avivtur
