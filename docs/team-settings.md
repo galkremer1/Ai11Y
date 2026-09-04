@@ -33,3 +33,21 @@ Team 1 owns the settings/configuration UI and the AI analysis backend.
 - API keys are encrypted with `safeStorage` before being stored via `electron-store`
 - The `connection:test` handler creates a Mastra agent and sends a simple prompt
 - AI analysis handlers (`ai:analyze-code`, `ai:analyze-html`) are currently stub implementations returning `{ ok: false, error: '...' }`
+
+## Goals
+
+### Goal 1: Implement `ai:analyze-code` IPC handler
+
+Wire the `AI_ANALYZE_CODE` handler in `src/main/ipc-handlers.ts` to call the Mastra `a11y-agent` with the submitted source code. The handler currently returns a stub `{ ok: false, error: '...' }` — it should invoke the agent, parse the response into `AnalyzeCodeResponse` (a list of `CodeFix` items), and return `{ ok: true, data }`. This unblocks Team 2's IDE auditor from showing real AI-suggested fixes.
+
+### Goal 2: Implement `ai:analyze-html` IPC handler
+
+Wire the `AI_ANALYZE_HTML` handler in `src/main/ipc-handlers.ts` to call the Mastra `a11y-agent` with the submitted HTML. Same pattern as Goal 1 — invoke the agent, return `AnalyzeHtmlResponse` (a list of `HtmlFix` items). This unblocks Team 3's browser auditor from showing real AI-suggested fixes.
+
+### Goal 3: Implement the `eslint-tool` Mastra tool
+
+The Mastra tool in `src/main/mastra/tools/eslint-tool.ts` is a placeholder that returns `{ errors: [] }`. Implement it to actually run ESLint with accessibility rules (e.g. `eslint-plugin-jsx-a11y`) against the provided directory and return real `EslintError[]` results.
+
+### Goal 4: Implement the `axe-core-tool` Mastra tool
+
+The Mastra tool in `src/main/mastra/tools/axe-core-tool.ts` is a placeholder that returns `{ violations: [] }`. Implement it to run axe-core against the provided URL (e.g. using Puppeteer or Playwright) and return real `AxeViolation[]` results.
