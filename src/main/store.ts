@@ -15,7 +15,7 @@ const defaults: StoreSchema = {
     },
     local: {
       baseURL: "http://localhost:11434/v1",
-      modelName: "Ollama/llama3.2:1b",
+      modelName: "llama3.2:1b",
     },
   },
 };
