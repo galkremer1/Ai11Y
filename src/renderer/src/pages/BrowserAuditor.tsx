@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Toolbar,
   ToolbarContent,
@@ -7,6 +7,7 @@ import {
   Button,
   Split,
   SplitItem,
+  Alert,
 } from "@patternfly/react-core";
 import SearchIcon from "@patternfly/react-icons/dist/esm/icons/search-icon";
 import { TopBar } from "../components/layout/TopBar";
@@ -14,7 +15,11 @@ import { EmpathyViewer } from "../components/browser/EmpathyViewer";
 import { EmpathyControls } from "../components/browser/EmpathyControls";
 import { AxeViolations } from "../components/browser/AxeViolations";
 import { CodeFix } from "../components/browser/CodeFix";
-import { mockAxeViolations } from "@shared/mocks/mock-axe";
+import { useBrowserServices } from "../hooks/useBrowserServices";
+import {
+  AxeAuditRequestSchema,
+  type AxeViolation,
+} from "@shared/schemas/axe.schemas";
 
 interface BrowserAuditorProps {
   title: string;
@@ -31,13 +36,47 @@ const fixFixed = `<img src="/hero-banner.jpg" alt="Hero banner showcasing our pr
 <a href="/profile" aria-label="View profile"><img src="/avatar.png" alt="User avatar"></a>`;
 
 export function BrowserAuditor({ title }: BrowserAuditorProps) {
+  const { runAxeAudit } = useBrowserServices();
   const [url, setUrl] = useState("");
   const [filter, setFilter] = useState("none");
   const [screenReaderOn, setScreenReaderOn] = useState(false);
+  const [violations, setViolations] = useState<AxeViolation[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
+  const handleAudit = useCallback(async () => {
+    setAuditError(null);
+    const parsed = AxeAuditRequestSchema.safeParse({ url: url.trim() });
+    if (!parsed.success) {
+      setAuditError("Enter a valid URL (e.g. https://example.com)");
+      return;
+    }
+
+    setAuditLoading(true);
+    try {
+      const result = await runAxeAudit(parsed.data);
+      if (!result.ok) {
+        setAuditError(result.error);
+        setViolations([]);
+        return;
+      }
+      setViolations(result.data.violations);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [url, runAxeAudit]);
 
   return (
     <>
       <TopBar title={title} />
+      {auditError && (
+        <Alert
+          variant="danger"
+          title={auditError}
+          isInline
+          style={{ margin: "8px 8px 0" }}
+        />
+      )}
       {/* URL Bar */}
       <Toolbar style={{ padding: "8px" }}>
         <ToolbarContent>
@@ -54,7 +93,13 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
             />
           </ToolbarItem>
           <ToolbarItem>
-            <Button variant="primary">Audit</Button>
+            <Button
+              variant="primary"
+              isLoading={auditLoading}
+              onClick={handleAudit}
+            >
+              Audit
+            </Button>
           </ToolbarItem>
         </ToolbarContent>
       </Toolbar>
@@ -85,7 +130,7 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
           style={{ display: "flex", flexDirection: "column" }}
         >
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <AxeViolations violations={mockAxeViolations} />
+            <AxeViolations violations={violations} />
           </div>
           <div
             className="ai11y-codefix-panel"
