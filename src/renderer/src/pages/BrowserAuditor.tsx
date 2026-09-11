@@ -25,27 +25,29 @@ interface BrowserAuditorProps {
   title: string;
 }
 
-const fixOriginal = `<img src="/hero-banner.jpg">
-<button class="icon-btn"><svg>...</svg></button>
-<html>
-<a href="/profile"><img src="/avatar.png"></a>`;
-
-const fixFixed = `<img src="/hero-banner.jpg" alt="Hero banner showcasing our product">
-<button class="icon-btn" aria-label="Menu"><svg aria-hidden="true">...</svg></button>
-<html lang="en">
-<a href="/profile" aria-label="View profile"><img src="/avatar.png" alt="User avatar"></a>`;
-
 export function BrowserAuditor({ title }: BrowserAuditorProps) {
-  const { runAxeAudit } = useBrowserServices();
+  const { runAxeAudit, analyzeHtml } = useBrowserServices();
   const [url, setUrl] = useState("");
   const [filter, setFilter] = useState("none");
   const [screenReaderOn, setScreenReaderOn] = useState(false);
   const [violations, setViolations] = useState<AxeViolation[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
+  const [selectedViolationKey, setSelectedViolationKey] = useState<
+    string | null
+  >(null);
+  const [fixOriginal, setFixOriginal] = useState("");
+  const [fixFixed, setFixFixed] = useState("");
+  const [fixLoading, setFixLoading] = useState(false);
+  const [fixError, setFixError] = useState<string | null>(null);
 
   const handleAudit = useCallback(async () => {
     setAuditError(null);
+    setFixError(null);
+    setSelectedViolationKey(null);
+    setFixOriginal("");
+    setFixFixed("");
+
     const parsed = AxeAuditRequestSchema.safeParse({ url: url.trim() });
     if (!parsed.success) {
       setAuditError("Enter a valid URL (e.g. https://example.com)");
@@ -66,6 +68,46 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
     }
   }, [url, runAxeAudit]);
 
+  const handleSelectViolation = useCallback(
+    async (violation: AxeViolation, key: string) => {
+      setSelectedViolationKey(key);
+      setFixError(null);
+
+      const html = violation.nodes[0]?.html;
+      if (!html) {
+        setFixError("This violation has no HTML snippet to analyze.");
+        setFixOriginal("");
+        setFixFixed("");
+        return;
+      }
+
+      setFixLoading(true);
+      try {
+        const result = await analyzeHtml({
+          html,
+          url: url.trim() || undefined,
+        });
+        if (!result.ok) {
+          setFixError(result.error);
+          setFixOriginal(html);
+          setFixFixed("");
+          return;
+        }
+        const fix = result.data.fixes[0];
+        if (!fix) {
+          setFixOriginal(html);
+          setFixFixed(html);
+          return;
+        }
+        setFixOriginal(fix.original);
+        setFixFixed(fix.fixed);
+      } finally {
+        setFixLoading(false);
+      }
+    },
+    [analyzeHtml, url],
+  );
+
   return (
     <>
       <TopBar title={title} />
@@ -73,6 +115,14 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
         <Alert
           variant="danger"
           title={auditError}
+          isInline
+          style={{ margin: "8px 8px 0" }}
+        />
+      )}
+      {fixError && (
+        <Alert
+          variant="warning"
+          title={fixError}
           isInline
           style={{ margin: "8px 8px 0" }}
         />
@@ -130,7 +180,11 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
           style={{ display: "flex", flexDirection: "column" }}
         >
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <AxeViolations violations={violations} />
+            <AxeViolations
+              violations={violations}
+              selectedKey={selectedViolationKey}
+              onSelectViolation={handleSelectViolation}
+            />
           </div>
           <div
             className="ai11y-codefix-panel"
@@ -139,7 +193,29 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
                 "1px solid var(--pf-t--global--border--color--default)",
             }}
           >
-            <CodeFix original={fixOriginal} fixed={fixFixed} />
+            {fixLoading ? (
+              <div
+                style={{
+                  padding: "var(--pf-t--global--spacer--md)",
+                  color: "var(--pf-t--global--text--color--subtle)",
+                  fontSize: "var(--pf-t--global--font--size--sm)",
+                }}
+              >
+                Generating AI fix…
+              </div>
+            ) : fixOriginal || fixFixed ? (
+              <CodeFix original={fixOriginal} fixed={fixFixed} />
+            ) : (
+              <div
+                style={{
+                  padding: "var(--pf-t--global--spacer--md)",
+                  color: "var(--pf-t--global--text--color--subtle)",
+                  fontSize: "var(--pf-t--global--font--size--sm)",
+                }}
+              >
+                Select a violation to get an AI-suggested HTML fix.
+              </div>
+            )}
           </div>
         </SplitItem>
       </Split>

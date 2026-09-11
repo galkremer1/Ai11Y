@@ -13,6 +13,8 @@ import type { AxeViolation } from "@shared/schemas/axe.schemas";
 
 interface AxeViolationsProps {
   violations: AxeViolation[];
+  selectedKey?: string | null;
+  onSelectViolation?: (violation: AxeViolation, key: string) => void;
 }
 
 type Impact = AxeViolation["impact"];
@@ -27,7 +29,11 @@ const impactConfig: Record<
   minor: { icon: <InfoCircleIcon />, labelColor: "blue" },
 };
 
-export function AxeViolations({ violations }: AxeViolationsProps) {
+export function AxeViolations({
+  violations,
+  selectedKey,
+  onSelectViolation,
+}: AxeViolationsProps) {
   return (
     <div
       style={{
@@ -56,11 +62,26 @@ export function AxeViolations({ violations }: AxeViolationsProps) {
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>
         <DataList aria-label="Axe-core violations" isCompact>
-          {violations.map((v) => {
+          {violations.map((v, index) => {
             const { icon, labelColor } = impactConfig[v.impact];
+            const itemKey = `${v.id}-${index}`;
+            const isSelected = selectedKey === itemKey;
             return (
-              <DataListItem key={v.id} id={`violation-${v.id}`}>
-                <DataListItemRow>
+              <DataListItem
+                key={itemKey}
+                id={`violation-${itemKey}`}
+                aria-labelledby={`violation-${itemKey}-label`}
+                isExpanded
+              >
+                <DataListItemRow
+                  onClick={() => onSelectViolation?.(v, itemKey)}
+                  style={{
+                    cursor: onSelectViolation ? "pointer" : undefined,
+                    backgroundColor: isSelected
+                      ? "var(--pf-t--global--background--color--secondary--default)"
+                      : undefined,
+                  }}
+                >
                   <DataListItemCells
                     dataListCells={[
                       <DataListCell key="icon" isIcon width={1}>
@@ -74,7 +95,7 @@ export function AxeViolations({ violations }: AxeViolationsProps) {
                             gap: "var(--pf-t--global--spacer--sm)",
                           }}
                         >
-                          <strong>{v.id}</strong>
+                          <strong id={`violation-${itemKey}-label`}>{v.id}</strong>
                           <Label color={labelColor} isCompact>
                             {v.impact}
                           </Label>
