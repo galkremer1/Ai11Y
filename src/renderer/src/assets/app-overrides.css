@@ -115,3 +115,12 @@
   background-color: var(--pf-t--global--background--color--tertiary--default);
   border-radius: var(--pf-t--global--border--radius--small);
 }
+
+/* Empathy viewer iframe — fills the CardBody container */
+.ai11y-empathy-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}

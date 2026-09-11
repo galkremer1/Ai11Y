@@ -10,7 +10,7 @@ import {
 } from "@patternfly/react-core";
 import SearchIcon from "@patternfly/react-icons/dist/esm/icons/search-icon";
 import { TopBar } from "../components/layout/TopBar";
-import { EmpathyViewer } from "../components/browser/EmpathyViewer";
+import { EmpathyViewer } from "../components/browser/EmpathyViewer/EmpathyViewer";
 import { EmpathyControls } from "../components/browser/EmpathyControls";
 import { AxeViolations } from "../components/browser/AxeViolations";
 import { CodeFix } from "../components/browser/CodeFix";
@@ -32,6 +32,7 @@ const fixFixed = `<img src="/hero-banner.jpg" alt="Hero banner showcasing our pr
 
 export function BrowserAuditor({ title }: BrowserAuditorProps) {
   const [url, setUrl] = useState("");
+  const [auditedUrl, setAuditedUrl] = useState("");
   const [filter, setFilter] = useState("none");
   const [screenReaderOn, setScreenReaderOn] = useState(false);
 
@@ -54,7 +55,9 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
             />
           </ToolbarItem>
           <ToolbarItem>
-            <Button variant="primary">Audit</Button>
+            <Button variant="primary" onClick={() => setAuditedUrl(url)}>
+              Audit
+            </Button>
           </ToolbarItem>
         </ToolbarContent>
       </Toolbar>
@@ -78,7 +81,7 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
             padding: "var(--pf-t--global--spacer--md)",
           }}
         >
-          <EmpathyViewer filter={filter} />
+          <EmpathyViewer filter={filter} url={auditedUrl} />
         </SplitItem>
         <SplitItem
           className="ai11y-violations-panel"
