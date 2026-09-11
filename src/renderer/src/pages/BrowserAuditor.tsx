@@ -12,6 +12,7 @@ import SearchIcon from "@patternfly/react-icons/dist/esm/icons/search-icon";
 import { TopBar } from "../components/layout/TopBar";
 import { EmpathyViewer } from "../components/browser/EmpathyViewer/EmpathyViewer";
 import { EmpathyControls } from "../components/browser/EmpathyControls";
+import { ScreenReaderBar } from "../components/browser/ScreenReaderBar";
 import { AxeViolations } from "../components/browser/AxeViolations";
 import { CodeFix } from "../components/browser/CodeFix";
 import { mockAxeViolations } from "@shared/mocks/mock-axe";
@@ -82,6 +83,10 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
           }}
         >
           <EmpathyViewer filter={filter} url={auditedUrl} />
+          <ScreenReaderBar
+            screenReaderOn={screenReaderOn}
+            url={auditedUrl}
+          />
         </SplitItem>
         <SplitItem
           className="ai11y-violations-panel"

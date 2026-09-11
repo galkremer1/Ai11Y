@@ -3,6 +3,11 @@ import { join } from "path";
 import { is } from "@electron-toolkit/utils";
 import { registerIpcHandlers } from "./ipc-handlers";
 
+app.commandLine.appendSwitch(
+  "enable-blink-features",
+  "ComputedAccessibilityInfo",
+);
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,

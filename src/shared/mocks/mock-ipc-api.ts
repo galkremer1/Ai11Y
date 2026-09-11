@@ -121,4 +121,8 @@ export const mockIpcApi: IpcApi = {
     await delay(800);
     return { ok: true, data: { violations: mockAxeViolations } };
   },
+
+  async injectScreenReader() {
+    await delay(100);
+  },
 };

@@ -28,4 +28,7 @@ contextBridge.exposeInMainWorld("api", {
   // Axe Audit (Team 3)
   runAxeAudit: (request: unknown) =>
     ipcRenderer.invoke(IpcChannels.AXE_AUDIT, request),
+  // Screen Reader (Team 3)
+  injectScreenReader: () =>
+    ipcRenderer.invoke(IpcChannels.SCREEN_READER_INJECT),
 });

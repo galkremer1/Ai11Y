@@ -54,6 +54,8 @@ export interface IpcApi {
   runAxeAudit(
     request: AxeAuditRequest,
   ): Promise<ServiceResult<AxeAuditResponse>>;
+  // Screen Reader (Team 3)
+  injectScreenReader(): Promise<void>;
 }
 
 declare global {

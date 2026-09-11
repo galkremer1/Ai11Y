@@ -14,6 +14,7 @@ export const IpcChannels = {
   FILE_WRITE: "file:write",
   // Team 3: Browser / Axe
   AXE_AUDIT: "axe:audit",
+  SCREEN_READER_INJECT: "screen-reader:inject",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
