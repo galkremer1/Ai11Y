@@ -29,5 +29,6 @@ export type LLMSettings = z.infer<typeof LLMSettingsSchema>;
 export const ConnectionTestResultSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
+  availableModels: z.array(z.string()).optional(),
 });
 export type ConnectionTestResult = z.infer<typeof ConnectionTestResultSchema>;

@@ -23,6 +23,7 @@ function createWindow(): void {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: true,
     },
   });
 
@@ -46,6 +47,12 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: "deny" };
+  });
+
+  mainWindow.webContents.on("will-attach-webview", (_event, webPreferences) => {
+    webPreferences.preload = join(__dirname, "../preload/webview.js");
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
   });
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {

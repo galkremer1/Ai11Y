@@ -16,5 +16,11 @@ export function getFixedCodeFromResponse(
       fixed = fixed.replace(fix.original, fix.fixed);
     }
   }
-  return fixed;
+  if (fixed !== originalCode) return fixed;
+
+  const plausible = response.fixes
+    .map((fix) => fix.fixed)
+    .filter((candidate) => candidate.length >= originalCode.length * 0.5)
+    .sort((a, b) => b.length - a.length)[0];
+  return plausible ?? originalCode;
 }

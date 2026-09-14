@@ -12,6 +12,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/openai": "^1.0.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@mastra/core": "^0.10.0",
@@ -20,6 +21,7 @@
     "@patternfly/react-icons": "^6.0.0",
     "@patternfly/react-styles": "^6.0.0",
     "@typescript-eslint/parser": "^8.69.0",
+    "axe-core": "^4.10.0",
     "electron-store": "^10.0.0",
     "eslint": "^9.39.5",
     "eslint-plugin-jsx-a11y": "^6.10.2",

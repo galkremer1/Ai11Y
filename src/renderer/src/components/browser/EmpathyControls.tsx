@@ -39,7 +39,7 @@ export function EmpathyControls({
       }}
     >
       <ToolbarContent>
-        <ToolbarItem>
+        <ToolbarItem data-tour="browser-filter">
           <EyeIcon style={{ marginRight: "var(--pf-t--global--spacer--sm)" }} />
           <FormSelect
             value={filter}
@@ -57,6 +57,7 @@ export function EmpathyControls({
             variant={screenReaderOn ? "primary" : "secondary"}
             icon={<DesktopIcon />}
             onClick={() => onScreenReaderToggle(!screenReaderOn)}
+            data-tour="browser-sr"
           >
             Screen Reader {screenReaderOn ? "On" : "Off"}
           </Button>

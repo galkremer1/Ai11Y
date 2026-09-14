@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Toolbar,
   ToolbarContent,
@@ -9,9 +9,15 @@ import {
   SplitItem,
   Alert,
 } from "@patternfly/react-core";
-import SearchIcon from "@patternfly/react-icons/dist/esm/icons/search-icon";
+import AngleLeftIcon from "@patternfly/react-icons/dist/esm/icons/angle-left-icon";
+import AngleRightIcon from "@patternfly/react-icons/dist/esm/icons/angle-right-icon";
+import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import { TopBar } from "../components/layout/TopBar";
-import { EmpathyViewer } from "../components/browser/EmpathyViewer/EmpathyViewer";
+import {
+  EmpathyViewer,
+  type EmpathyViewerHandle,
+  type PreviewNavState,
+} from "../components/browser/EmpathyViewer/EmpathyViewer";
 import { EmpathyControls } from "../components/browser/EmpathyControls";
 import { ScreenReaderBar } from "../components/browser/ScreenReaderBar";
 import { AxeViolations } from "../components/browser/AxeViolations";
@@ -21,6 +27,8 @@ import {
   AxeAuditRequestSchema,
   type AxeViolation,
 } from "@shared/schemas/axe.schemas";
+import { useDemoTour } from "../tour/DemoTourProvider";
+import { TOUR_DEMO_URLS } from "../tour/tour-demo";
 
 interface BrowserAuditorProps {
   title: string;
@@ -28,8 +36,9 @@ interface BrowserAuditorProps {
 
 export function BrowserAuditor({ title }: BrowserAuditorProps) {
   const { runAxeAudit, analyzeHtml } = useBrowserServices();
+  const { isActive, page, step, tourSession } = useDemoTour();
   const [url, setUrl] = useState("");
-  const [auditedUrl, setAuditedUrl] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [filter, setFilter] = useState("none");
   const [screenReaderOn, setScreenReaderOn] = useState(false);
   const [violations, setViolations] = useState<AxeViolation[]>([]);
@@ -42,34 +51,105 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
   const [fixFixed, setFixFixed] = useState("");
   const [fixLoading, setFixLoading] = useState(false);
   const [fixError, setFixError] = useState<string | null>(null);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [loadedDemoKey, setLoadedDemoKey] = useState<string | null>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const viewerRef = useRef<EmpathyViewerHandle>(null);
+  const urlFocusedRef = useRef(false);
+
+  const navigateToUrl = useCallback(
+    (rawUrl: string): string | null => {
+      const parsed = AxeAuditRequestSchema.safeParse({ url: rawUrl.trim() });
+      if (!parsed.success) {
+        setAuditError(
+          "Enter a valid URL (e.g. example.com or https://example.com)",
+        );
+        return null;
+      }
+
+      setAuditError(null);
+      setUrl(rawUrl.trim());
+
+      if (previewUrl !== parsed.data.url) {
+        setFixError(null);
+        setPreviewUrl(parsed.data.url);
+        setPreviewReady(false);
+        setSelectedViolationKey(null);
+        setFixOriginal("");
+        setFixFixed("");
+        setViolations([]);
+      }
+
+      return parsed.data.url;
+    },
+    [previewUrl],
+  );
+
+  const runAuditForUrl = useCallback(
+    async (rawUrl: string) => {
+      const normalized = navigateToUrl(rawUrl);
+      if (!normalized) return;
+
+      setAuditLoading(true);
+      try {
+        const result = await runAxeAudit({ url: normalized });
+        if (!result.ok) {
+          setAuditError(result.error);
+          setViolations([]);
+          return;
+        }
+        setViolations(result.data.violations);
+      } finally {
+        setAuditLoading(false);
+      }
+    },
+    [navigateToUrl, runAxeAudit],
+  );
+
+  useEffect(() => {
+    if (!isActive || tourSession === 0) return;
+
+    const stepId = step?.id;
+    let demoUrl: string | null = null;
+    if (
+      page === "browser" ||
+      stepId === "nav-browser" ||
+      stepId === "browser-url" ||
+      stepId === "browser-audit"
+    ) {
+      demoUrl = TOUR_DEMO_URLS.example;
+    }
+    if (
+      stepId === "browser-filter" ||
+      stepId === "browser-sr" ||
+      stepId === "browser-violations"
+    ) {
+      demoUrl = TOUR_DEMO_URLS.waiBefore;
+    }
+    if (!demoUrl) return;
+
+    const key = `${tourSession}:${demoUrl}`;
+    if (loadedDemoKey === key) return;
+    setLoadedDemoKey(key);
+    void runAuditForUrl(demoUrl);
+  }, [isActive, tourSession, page, step?.id, loadedDemoKey, runAuditForUrl]);
 
   const handleAudit = useCallback(async () => {
-    setAuditError(null);
-    setFixError(null);
-    setSelectedViolationKey(null);
-    setFixOriginal("");
-    setFixFixed("");
+    await runAuditForUrl(url);
+  }, [url, runAuditForUrl]);
 
-    const parsed = AxeAuditRequestSchema.safeParse({ url: url.trim() });
-    if (!parsed.success) {
-      setAuditError("Enter a valid URL (e.g. https://example.com)");
-      return;
+  const handleLocationChange = useCallback((loc: string) => {
+    setPreviewUrl(loc);
+    if (!urlFocusedRef.current) {
+      setUrl(loc);
     }
+  }, []);
 
-    setAuditedUrl(parsed.data.url);
-    setAuditLoading(true);
-    try {
-      const result = await runAxeAudit(parsed.data);
-      if (!result.ok) {
-        setAuditError(result.error);
-        setViolations([]);
-        return;
-      }
-      setViolations(result.data.violations);
-    } finally {
-      setAuditLoading(false);
-    }
-  }, [url, runAxeAudit]);
+  const handleNavStateChange = useCallback((state: PreviewNavState) => {
+    setCanGoBack(state.canGoBack);
+    setCanGoForward(state.canGoForward);
+  }, []);
 
   const handleSelectViolation = useCallback(
     async (violation: AxeViolation, key: string) => {
@@ -88,7 +168,7 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
       try {
         const result = await analyzeHtml({
           html,
-          url: url.trim() || undefined,
+          url: previewUrl || undefined,
         });
         if (!result.ok) {
           setFixError(result.error);
@@ -108,7 +188,7 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
         setFixLoading(false);
       }
     },
-    [analyzeHtml, url],
+    [analyzeHtml, previewUrl],
   );
 
   return (
@@ -133,23 +213,60 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
       {/* URL Bar */}
       <Toolbar style={{ padding: "8px" }}>
         <ToolbarContent>
-          <ToolbarItem>
-            <SearchIcon style={{ marginTop: "8px" }} />
+          <ToolbarItem style={{ flex: 1 }} data-tour="browser-url">
+            <form
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                navigateToUrl(url);
+              }}
+              style={{ width: "100%" }}
+            >
+              <TextInput
+                type="text"
+                value={url}
+                onChange={(_e, value) => setUrl(value)}
+                onFocus={() => {
+                  urlFocusedRef.current = true;
+                }}
+                onBlur={() => {
+                  urlFocusedRef.current = false;
+                }}
+                placeholder="Enter a URL (e.g. example.com)"
+                aria-label="URL to open"
+              />
+            </form>
           </ToolbarItem>
-          <ToolbarItem style={{ flex: 1 }}>
-            <TextInput
-              type="url"
-              value={url}
-              onChange={(_e, value) => setUrl(value)}
-              placeholder="Enter URL to audit (e.g. https://example.com)"
-              aria-label="URL to audit"
+          <ToolbarItem>
+            <Button
+              variant="plain"
+              aria-label="Back"
+              icon={<AngleLeftIcon />}
+              isDisabled={!canGoBack}
+              onClick={() => viewerRef.current?.goBack()}
+            />
+            <Button
+              variant="plain"
+              aria-label="Forward"
+              icon={<AngleRightIcon />}
+              isDisabled={!canGoForward}
+              onClick={() => viewerRef.current?.goForward()}
+            />
+            <Button
+              variant="plain"
+              aria-label="Refresh"
+              icon={<SyncAltIcon />}
+              isDisabled={!previewUrl}
+              onClick={() => viewerRef.current?.reload()}
             />
           </ToolbarItem>
           <ToolbarItem>
             <Button
               variant="primary"
+              type="button"
               isLoading={auditLoading}
               onClick={handleAudit}
+              data-tour="browser-audit"
             >
               Audit
             </Button>
@@ -176,14 +293,23 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
             padding: "var(--pf-t--global--spacer--md)",
           }}
         >
-          <EmpathyViewer filter={filter} url={auditedUrl} />
+          <EmpathyViewer
+            ref={viewerRef}
+            filter={filter}
+            url={previewUrl}
+            onPreviewReady={setPreviewReady}
+            onLocationChange={handleLocationChange}
+            onNavStateChange={handleNavStateChange}
+          />
           <ScreenReaderBar
             screenReaderOn={screenReaderOn}
-            url={auditedUrl}
+            url={previewUrl}
+            previewReady={previewReady}
           />
         </SplitItem>
         <SplitItem
           className="ai11y-violations-panel"
+          data-tour="browser-violations"
           style={{ display: "flex", flexDirection: "column" }}
         >
           <div style={{ flex: 1, overflow: "hidden" }}>

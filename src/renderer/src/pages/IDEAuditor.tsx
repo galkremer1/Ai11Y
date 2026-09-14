@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Toolbar,
   ToolbarContent,
@@ -25,6 +25,16 @@ import { languageFromPath } from "../utils/languageFromPath";
 import { getFixedCodeFromResponse } from "../utils/getFixedCodeFromResponse";
 import type { FileTreeNode } from "@shared/schemas/filesystem.schemas";
 import type { EslintError } from "@shared/schemas/eslint.schemas";
+import { useDemoTour } from "../tour/DemoTourProvider";
+import {
+  TOUR_DEMO_DIRECTORY,
+  TOUR_DEMO_ESLINT,
+  TOUR_DEMO_FILES,
+  TOUR_DEMO_LOGIN,
+  TOUR_DEMO_TREE,
+  isTourDemoDirectory,
+  isTourDemoPath,
+} from "../tour/tour-demo";
 
 interface IDEAuditorProps {
   title: string;
@@ -39,6 +49,7 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
     runEslint,
     analyzeCode,
   } = useIdeServices();
+  const { tourSession } = useDemoTour();
 
   const [directory, setDirectory] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<FileTreeNode | null>(null);
@@ -59,6 +70,26 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
   const [saveLoading, setSaveLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+
+  const applyTourSample = useCallback(() => {
+    setDirectory(TOUR_DEMO_DIRECTORY);
+    setFileTree(TOUR_DEMO_TREE);
+    setSelectedFilePath(TOUR_DEMO_LOGIN);
+    setCode(TOUR_DEMO_FILES[TOUR_DEMO_LOGIN] ?? "");
+    setLanguage(languageFromPath(TOUR_DEMO_LOGIN));
+    setEslintErrors(TOUR_DEMO_ESLINT);
+    setHasRunAudit(true);
+    setShowDiff(false);
+    setFixedCode("");
+    setError(null);
+    setTreeLoading(false);
+    setFileLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tourSession === 0) return;
+    applyTourSample();
+  }, [tourSession, applyTourSample]);
 
   const loadFileTree = useCallback(
     async (dir: string) => {
@@ -100,6 +131,14 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
     setShowDiff(false);
     setFixedCode("");
 
+    if (isTourDemoPath(filePath)) {
+      const content = TOUR_DEMO_FILES[filePath] ?? "";
+      setCode(content);
+      setLanguage(languageFromPath(filePath));
+      setFileLoading(false);
+      return;
+    }
+
     const result = await readFile({ filePath });
     setFileLoading(false);
 
@@ -114,6 +153,13 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
 
   const handleRunAudit = async () => {
     if (!directory) return;
+
+    if (isTourDemoDirectory(directory)) {
+      setEslintErrors(TOUR_DEMO_ESLINT);
+      setHasRunAudit(true);
+      setError(null);
+      return;
+    }
 
     setAuditLoading(true);
     setError(null);
@@ -153,6 +199,13 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
 
   const handleAcceptFix = async () => {
     if (!selectedFilePath || !fixedCode) return;
+
+    if (isTourDemoPath(selectedFilePath)) {
+      setCode(fixedCode);
+      setShowDiff(false);
+      setFixedCode("");
+      return;
+    }
 
     setSaveLoading(true);
     setError(null);
@@ -202,6 +255,7 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
               variant="secondary"
               icon={<FolderOpenIcon />}
               onClick={handleSelectDir}
+              data-tour="ide-select-dir"
             >
               {directory ? directory : "Select Directory"}
             </Button>
@@ -213,6 +267,7 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
               onClick={handleRunAudit}
               isDisabled={!directory}
               isLoading={auditLoading}
+              data-tour="ide-run-audit"
             >
               Run Audit
             </Button>
@@ -224,6 +279,7 @@ export function IDEAuditor({ title }: IDEAuditorProps) {
               onClick={handleAiFix}
               isDisabled={!selectedFilePath || !code}
               isLoading={aiLoading}
+              data-tour="ide-ai-fix"
             >
               AI Fix
             </Button>

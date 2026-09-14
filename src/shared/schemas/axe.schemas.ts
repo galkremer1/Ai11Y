@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHttpUrl, normalizeAuditUrl } from "../url";
 
 export const AxeNodeSchema = z.object({
   html: z.string(),
@@ -18,7 +19,13 @@ export type AxeViolation = z.infer<typeof AxeViolationSchema>;
 export const AxeAuditRequestSchema = z.object({
   url: z
     .string()
-    .url()
+    .transform(normalizeAuditUrl)
+    .pipe(
+      z
+        .string()
+        .url()
+        .refine(isHttpUrl, { message: "Only http and https URLs are supported" }),
+    )
     .describe("The URL to audit for accessibility violations"),
 });
 export type AxeAuditRequest = z.infer<typeof AxeAuditRequestSchema>;

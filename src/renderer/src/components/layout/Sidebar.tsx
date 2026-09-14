@@ -30,6 +30,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps) {
             isActive={current === id}
             icon={icon}
             component="button"
+            id={`tour-nav-${id}`}
           >
             {label}
           </NavItem>

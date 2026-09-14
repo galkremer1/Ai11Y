@@ -3,16 +3,16 @@ import {
   AxeAuditRequestSchema,
   AxeAuditResponseSchema,
 } from "../../../shared/schemas/axe.schemas";
+import { runAxeAudit } from "../../axe-audit";
 
 export const axeCoreTool = createTool({
   id: "axe-core-audit",
   description:
-    "Run Axe-Core accessibility audit against a URL using Playwright",
+    "Run Axe-Core accessibility audit against a URL in a hidden BrowserWindow",
   inputSchema: AxeAuditRequestSchema,
   outputSchema: AxeAuditResponseSchema,
   execute: async ({ context }) => {
-    // Placeholder: will integrate @axe-core/playwright in a future phase
-    console.log(`[axe-core-tool] Would audit: ${context.url}`);
-    return { violations: [] };
+    const violations = await runAxeAudit(context.url);
+    return { violations };
   },
 });

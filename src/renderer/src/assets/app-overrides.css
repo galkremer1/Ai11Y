@@ -134,3 +134,22 @@
   font-size: var(--pf-t--global--font--size--sm);
   border-top: 1px solid var(--pf-t--global--border--color--default);
 }
+
+.ai11y-tour-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-t--global--spacer--sm);
+  flex-shrink: 0;
+  padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+.ai11y-tour-spotlight {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9000;
+  border-radius: var(--pf-t--global--border--radius--small);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}

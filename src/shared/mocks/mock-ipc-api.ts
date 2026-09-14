@@ -26,8 +26,30 @@ export const mockIpcApi: IpcApi = {
     storedSettings = { ...settings };
   },
 
-  async testConnection(_settings) {
+  async testConnection(settings) {
     await delay(800);
+    if (settings.mode === "local") {
+      const installed = [
+        "llama3.2:latest",
+        "llama3.1:latest",
+        "gpt-oss:20b",
+      ];
+      const want = settings.local.modelName.trim();
+      const found = installed.some(
+        (tag) =>
+          tag === want ||
+          tag === `${want}:latest` ||
+          (want.endsWith(":latest") &&
+            tag === want.slice(0, -":latest".length)),
+      );
+      if (!found) {
+        return {
+          ok: false,
+          message: `Ollama is running, but model "${want}" is not pulled.`,
+          availableModels: installed,
+        };
+      }
+    }
     return { ok: true, message: "Connected. Response: ok" };
   },
 

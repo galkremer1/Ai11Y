@@ -78,20 +78,22 @@ if (!window.__ai11yScreenReader) {
     var match = tag.match(/^h([1-6])$/);
     if (match) level = parseInt(match[1]);
 
-    window.parent.postMessage(
-      {
-        type: "ai11y:screen-reader",
-        role: computedRole || manualRole || tag,
-        name: computedName || manualName || null,
-        tag: tag,
-        href: el.href || null,
-        level: level,
-        inputType:
-          tag === "input" ? el.getAttribute("type") || "text" : null,
-        hasComputed: !!(computedRole || computedName),
-      },
-      "*",
-    );
+    var payload = {
+      type: "ai11y:screen-reader",
+      role: computedRole || manualRole || tag,
+      name: computedName || manualName || null,
+      tag: tag,
+      href: el.href || null,
+      level: level,
+      inputType: tag === "input" ? el.getAttribute("type") || "text" : null,
+      hasComputed: !!(computedRole || computedName),
+    };
+
+    if (window.ai11yHost && typeof window.ai11yHost.announce === "function") {
+      window.ai11yHost.announce(payload);
+    } else {
+      window.parent.postMessage(payload, "*");
+    }
   });
 }
 true;

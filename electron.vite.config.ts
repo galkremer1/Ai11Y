@@ -24,8 +24,11 @@ export default defineConfig({
       },
     },
     build: {
-      lib: {
-        entry: resolve("src/preload/index.ts"),
+      rollupOptions: {
+        input: {
+          index: resolve("src/preload/index.ts"),
+          webview: resolve("src/preload/webview.ts"),
+        },
       },
     },
   },

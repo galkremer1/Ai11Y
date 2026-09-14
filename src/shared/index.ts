@@ -1,6 +1,8 @@
 // Channel constants
 export { IpcChannels, type IpcChannel } from "./channels";
 
+export { normalizeAuditUrl, isHttpUrl } from "./url";
+
 // Common schemas
 export {
   serviceResultSchema,

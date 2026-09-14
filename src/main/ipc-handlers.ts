@@ -1,6 +1,6 @@
-import { ipcMain, dialog, BrowserWindow } from "electron";
+import { ipcMain, dialog, BrowserWindow, webContents } from "electron";
 import { getSettings, saveSettings } from "./store";
-import { getA11yAgent } from "./mastra/agents/a11y-agent";
+import { getA11yAgentFromSettings } from "./mastra/agents/a11y-agent";
 import { IpcChannels } from "../shared/channels";
 import {
   FileTreeRequestSchema,
@@ -8,14 +8,28 @@ import {
   FileWriteRequestSchema,
 } from "../shared/schemas/filesystem.schemas";
 import { EslintRunRequestSchema } from "../shared/schemas/eslint.schemas";
-import { AnalyzeCodeRequestSchema } from "../shared/schemas/ai-analysis.schemas";
+import {
+  AnalyzeCodeRequestSchema,
+  AnalyzeHtmlRequestSchema,
+} from "../shared/schemas/ai-analysis.schemas";
+import { LLMSettingsSchema } from "../shared/schemas/settings.schemas";
 import {
   readDirectoryTree,
   readFileContent,
   writeFileContent,
 } from "./filesystem";
 import { runEslintAudit } from "./mastra/tools/eslint-tool";
-import { analyzeCodeWithAgent } from "./ai-analysis";
+import {
+  analyzeCodeWithAgent,
+  analyzeHtmlWithAgent,
+} from "./ai-analysis";
+import { runAxeAudit } from "./axe-audit";
+import { AxeAuditRequestSchema } from "../shared/schemas/axe.schemas";
+import {
+  listOllamaModels,
+  modelIsInstalled,
+  normalizeOllamaBaseURL,
+} from "./ollama";
 import screenReaderScript from "./screen-reader-inject.js?raw";
 
 export function registerIpcHandlers(): void {
@@ -29,18 +43,22 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IpcChannels.CONNECTION_TEST, async (_event, settings) => {
     try {
-      const agent = getA11yAgent({
-        mode: settings.mode,
-        apiKey: settings.cloud?.apiKey,
-        baseURL:
-          settings.mode === "cloud"
-            ? settings.cloud?.baseURL
-            : settings.local?.baseURL,
-        modelName:
-          settings.mode === "cloud"
-            ? settings.cloud?.modelName
-            : settings.local?.modelName,
-      });
+      const parsed = LLMSettingsSchema.parse(settings);
+
+      if (parsed.mode === "local") {
+        const baseURL = normalizeOllamaBaseURL(parsed.local.baseURL);
+        const installed = await listOllamaModels(baseURL);
+        if (!modelIsInstalled(parsed.local.modelName, installed)) {
+          const sample = installed.slice(0, 8);
+          return {
+            ok: false,
+            message: `Ollama is running, but model "${parsed.local.modelName}" is not pulled.`,
+            availableModels: sample,
+          };
+        }
+      }
+
+      const agent = getA11yAgentFromSettings(parsed);
       const result = await agent.generate(
         'Respond with "ok" and nothing else.',
       );
@@ -71,8 +89,15 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle(IpcChannels.AI_ANALYZE_HTML, async (_event, _request) => {
-    return { ok: false, error: "AI HTML analysis not yet implemented" };
+  ipcMain.handle(IpcChannels.AI_ANALYZE_HTML, async (_event, request) => {
+    try {
+      const parsed = AnalyzeHtmlRequestSchema.parse(request);
+      const data = await analyzeHtmlWithAgent(parsed);
+      return { ok: true, data };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
   });
 
   ipcMain.handle(IpcChannels.ESLINT_RUN, async (_event, request) => {
@@ -119,19 +144,35 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle(IpcChannels.AXE_AUDIT, async (_event, _request) => {
-    return { ok: false, error: "Axe audit not yet implemented" };
+  ipcMain.handle(IpcChannels.AXE_AUDIT, async (_event, request) => {
+    try {
+      const { url } = AxeAuditRequestSchema.parse(request);
+      const violations = await runAxeAudit(url);
+      return { ok: true, data: { violations } };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
   });
 
-  // Screen Reader — inject focus-listener into the audited page's iframe
+  // Screen Reader — inject focus-listener into the audited page iframe or webview
   ipcMain.handle(IpcChannels.SCREEN_READER_INJECT, async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return;
+    if (win) {
+      const mainFrame = win.webContents.mainFrame;
+      for (const frame of mainFrame.frames) {
+        if (frame.url.startsWith("http")) {
+          await frame.executeJavaScript(screenReaderScript);
+        }
+      }
+    }
 
-    const mainFrame = win.webContents.mainFrame;
-    for (const frame of mainFrame.frames) {
-      if (frame.url.startsWith("http")) {
-        await frame.executeJavaScript(screenReaderScript);
+    for (const contents of webContents.getAllWebContents()) {
+      if (
+        contents.getType() === "webview" &&
+        contents.getURL().startsWith("http")
+      ) {
+        await contents.executeJavaScript(screenReaderScript);
       }
     }
   });

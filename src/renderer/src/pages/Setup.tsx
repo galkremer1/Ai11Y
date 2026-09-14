@@ -12,6 +12,7 @@ import { CloudConfig } from "../components/setup/CloudConfig";
 import { LocalConfig } from "../components/setup/LocalConfig";
 import { ConnectionTest } from "../components/setup/ConnectionTest";
 import { useSettings } from "../hooks/useSettings";
+import { useDemoTour } from "../tour/DemoTourProvider";
 import { defaultSettings } from "@shared/mocks/mock-settings";
 import type { LLMSettings } from "@shared/schemas/settings.schemas";
 
@@ -21,6 +22,7 @@ interface SetupProps {
 
 export function Setup({ title }: SetupProps) {
   const { getSettings, saveSettings } = useSettings();
+  const { start } = useDemoTour();
   const [settings, setSettings] = useState<LLMSettings>(defaultSettings);
   const [saved, setSaved] = useState(false);
 
@@ -51,10 +53,12 @@ export function Setup({ title }: SetupProps) {
               : "Local Ollama Configuration"}
           </CardTitle>
           <CardBody>
-            <ModeToggle
-              mode={settings.mode}
-              onChange={(mode) => setSettings({ ...settings, mode })}
-            />
+            <div data-tour="setup-mode">
+              <ModeToggle
+                mode={settings.mode}
+                onChange={(mode) => setSettings({ ...settings, mode })}
+              />
+            </div>
 
             <div style={{ marginTop: "var(--pf-t--global--spacer--lg)" }}>
               {settings.mode === "cloud" ? (
@@ -65,11 +69,46 @@ export function Setup({ title }: SetupProps) {
             </div>
 
             <Flex style={{ marginTop: "var(--pf-t--global--spacer--lg)" }}>
-              <Button variant="secondary" onClick={handleSave}>
+              <Button
+                variant="secondary"
+                onClick={handleSave}
+                data-tour="setup-save"
+              >
                 {saved ? "Saved!" : "Save Settings"}
               </Button>
-              <ConnectionTest settings={settings} />
+              <ConnectionTest
+                settings={settings}
+                onSelectModel={(modelName) =>
+                  setSettings({
+                    ...settings,
+                    local: { ...settings.local, modelName },
+                  })
+                }
+              />
             </Flex>
+          </CardBody>
+        </Card>
+
+        <Card
+          style={{
+            maxWidth: "32rem",
+            margin: "var(--pf-t--global--spacer--lg) auto 0",
+          }}
+        >
+          <CardTitle>Product tour</CardTitle>
+          <CardBody>
+            <p style={{ marginTop: 0 }}>
+              Walk through Setup, IDE Auditor, and Browser Auditor step by step.
+              You can use the real controls while the coach marks are open.
+            </p>
+            <Button
+              style={{ marginTop: "var(--pf-t--global--spacer--md)" }}
+              variant="primary"
+              onClick={start}
+              data-tour="setup-tour"
+            >
+              Start product tour
+            </Button>
           </CardBody>
         </Card>
       </div>

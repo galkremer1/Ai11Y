@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import VolumeUpIcon from "@patternfly/react-icons/dist/esm/icons/volume-up-icon";
+import { useApi } from "../../services/ApiProvider";
 
 interface ScreenReaderAnnouncement {
   role: string;
@@ -14,6 +15,7 @@ interface ScreenReaderAnnouncement {
 interface ScreenReaderBarProps {
   screenReaderOn: boolean;
   url: string;
+  previewReady?: boolean;
 }
 
 function formatAnnouncement(a: ScreenReaderAnnouncement): string {
@@ -50,10 +52,19 @@ function formatDetails(a: ScreenReaderAnnouncement): string {
   return parts.join(" ");
 }
 
-export function ScreenReaderBar({ screenReaderOn, url }: ScreenReaderBarProps) {
+export function ScreenReaderBar({
+  screenReaderOn,
+  url,
+  previewReady = false,
+}: ScreenReaderBarProps) {
+  const api = useApi();
   const [announcement, setAnnouncement] =
     useState<ScreenReaderAnnouncement | null>(null);
   const injectedRef = useRef(false);
+
+  useEffect(() => {
+    injectedRef.current = false;
+  }, [url]);
 
   useEffect(() => {
     if (!screenReaderOn || !url.trim()) {
@@ -86,16 +97,16 @@ export function ScreenReaderBar({ screenReaderOn, url }: ScreenReaderBarProps) {
 
     window.addEventListener("message", handleMessage);
 
-    if (!injectedRef.current) {
+    if (previewReady && !injectedRef.current) {
       injectedRef.current = true;
-      window.api.injectScreenReader();
+      void api.injectScreenReader();
     }
 
     return () => {
       window.removeEventListener("message", handleMessage);
       speechSynthesis.cancel();
     };
-  }, [screenReaderOn, url]);
+  }, [screenReaderOn, url, previewReady, api]);
 
   if (!screenReaderOn || !url.trim()) return null;
 
@@ -138,7 +149,9 @@ export function ScreenReaderBar({ screenReaderOn, url }: ScreenReaderBarProps) {
               fontStyle: "italic",
             }}
           >
-            Tab through the page to hear screen reader announcements
+            {previewReady
+              ? "Tab through the page to hear screen reader announcements"
+              : "Waiting for the page to finish loading…"}
           </span>
         )}
       </div>
