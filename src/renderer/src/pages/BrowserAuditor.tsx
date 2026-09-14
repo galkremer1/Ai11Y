@@ -8,9 +8,22 @@ import {
   Split,
   SplitItem,
   Alert,
+  Dropdown,
+  DropdownGroup,
+  DropdownItem,
+  DropdownList,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuList,
+  MenuToggle,
+  MenuToggleAction,
 } from "@patternfly/react-core";
 import AngleLeftIcon from "@patternfly/react-icons/dist/esm/icons/angle-left-icon";
 import AngleRightIcon from "@patternfly/react-icons/dist/esm/icons/angle-right-icon";
+import HistoryIcon from "@patternfly/react-icons/dist/esm/icons/history-icon";
+import OutlinedStarIcon from "@patternfly/react-icons/dist/esm/icons/outlined-star-icon";
+import StarIcon from "@patternfly/react-icons/dist/esm/icons/star-icon";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import { TopBar } from "../components/layout/TopBar";
 import {
@@ -29,6 +42,12 @@ import {
 } from "@shared/schemas/axe.schemas";
 import { useDemoTour } from "../tour/DemoTourProvider";
 import { TOUR_DEMO_URLS } from "../tour/tour-demo";
+import {
+  loadFavorites,
+  loadVisitHistory,
+  recordVisit,
+  toggleFavorite,
+} from "../utils/browser-history";
 
 interface BrowserAuditorProps {
   title: string;
@@ -55,8 +74,17 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
   const [loadedDemoKey, setLoadedDemoKey] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [visits, setVisits] = useState(() => loadVisitHistory());
+  const [favorites, setFavorites] = useState(() => loadFavorites());
+  const [urlMenuOpen, setUrlMenuOpen] = useState(false);
+  const [auditMenuOpen, setAuditMenuOpen] = useState(false);
   const viewerRef = useRef<EmpathyViewerHandle>(null);
   const urlFocusedRef = useRef(false);
+  const urlBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const rememberVisit = useCallback((normalized: string) => {
+    setVisits(recordVisit(normalized));
+  }, []);
 
   const navigateToUrl = useCallback(
     (rawUrl: string): string | null => {
@@ -70,6 +98,9 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
 
       setAuditError(null);
       setUrl(rawUrl.trim());
+      rememberVisit(parsed.data.url);
+      setUrlMenuOpen(false);
+      setAuditMenuOpen(false);
 
       if (previewUrl !== parsed.data.url) {
         setFixError(null);
@@ -83,7 +114,7 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
 
       return parsed.data.url;
     },
-    [previewUrl],
+    [previewUrl, rememberVisit],
   );
 
   const runAuditForUrl = useCallback(
@@ -139,12 +170,16 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
     await runAuditForUrl(url);
   }, [url, runAuditForUrl]);
 
-  const handleLocationChange = useCallback((loc: string) => {
-    setPreviewUrl(loc);
-    if (!urlFocusedRef.current) {
-      setUrl(loc);
-    }
-  }, []);
+  const handleLocationChange = useCallback(
+    (loc: string) => {
+      setPreviewUrl(loc);
+      rememberVisit(loc);
+      if (!urlFocusedRef.current) {
+        setUrl(loc);
+      }
+    },
+    [rememberVisit],
+  );
 
   const handleNavStateChange = useCallback((state: PreviewNavState) => {
     setCanGoBack(state.canGoBack);
@@ -191,6 +226,45 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
     [analyzeHtml, previewUrl],
   );
 
+  useEffect(() => {
+    return () => {
+      if (urlBlurTimerRef.current !== null) {
+        clearTimeout(urlBlurTimerRef.current);
+      }
+    };
+  }, []);
+
+  const isBookmarked = Boolean(previewUrl && favorites.includes(previewUrl));
+  const hasSavedUrls = visits.length > 0 || favorites.length > 0;
+
+  const handleToggleFavorite = useCallback(() => {
+    if (!previewUrl) return;
+    setFavorites(toggleFavorite(previewUrl));
+  }, [previewUrl]);
+
+  const handleUrlFocus = useCallback(() => {
+    urlFocusedRef.current = true;
+    if (urlBlurTimerRef.current !== null) {
+      clearTimeout(urlBlurTimerRef.current);
+      urlBlurTimerRef.current = null;
+    }
+    setUrlMenuOpen(true);
+  }, []);
+
+  const handleUrlBlur = useCallback(() => {
+    urlBlurTimerRef.current = setTimeout(() => {
+      urlFocusedRef.current = false;
+      setUrlMenuOpen(false);
+      urlBlurTimerRef.current = null;
+    }, 150);
+  }, []);
+
+  const urlMenuItem = (href: string) => (
+    <span className="ai11y-url-truncate" title={href}>
+      {href}
+    </span>
+  );
+
   return (
     <>
       <TopBar title={title} />
@@ -213,30 +287,6 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
       {/* URL Bar */}
       <Toolbar style={{ padding: "8px" }}>
         <ToolbarContent>
-          <ToolbarItem style={{ flex: 1 }} data-tour="browser-url">
-            <form
-              noValidate
-              onSubmit={(event) => {
-                event.preventDefault();
-                navigateToUrl(url);
-              }}
-              style={{ width: "100%" }}
-            >
-              <TextInput
-                type="text"
-                value={url}
-                onChange={(_e, value) => setUrl(value)}
-                onFocus={() => {
-                  urlFocusedRef.current = true;
-                }}
-                onBlur={() => {
-                  urlFocusedRef.current = false;
-                }}
-                placeholder="Enter a URL (e.g. example.com)"
-                aria-label="URL to open"
-              />
-            </form>
-          </ToolbarItem>
           <ToolbarItem>
             <Button
               variant="plain"
@@ -260,16 +310,135 @@ export function BrowserAuditor({ title }: BrowserAuditorProps) {
               onClick={() => viewerRef.current?.reload()}
             />
           </ToolbarItem>
+          <ToolbarItem style={{ flex: 1 }} data-tour="browser-url">
+            <form
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                navigateToUrl(url);
+              }}
+              style={{ width: "100%" }}
+            >
+              <div className="ai11y-omnibox">
+                <TextInput
+                  type="text"
+                  value={url}
+                  onChange={(_e, value) => setUrl(value)}
+                  onFocus={handleUrlFocus}
+                  onClick={handleUrlFocus}
+                  onBlur={handleUrlBlur}
+                  placeholder="Enter a URL (e.g. example.com)"
+                  aria-label="URL to open"
+                  autoComplete="off"
+                  expandedProps={{
+                    isExpanded: urlMenuOpen && visits.length > 0,
+                    ariaControls: "ai11y-omnibox-menu",
+                  }}
+                />
+                {urlMenuOpen && visits.length > 0 && (
+                  <div className="ai11y-omnibox-menu" id="ai11y-omnibox-menu">
+                    <Menu
+                      onSelect={(_event, itemId) => {
+                        if (typeof itemId === "string") {
+                          navigateToUrl(itemId);
+                        }
+                      }}
+                    >
+                      <MenuContent>
+                        <MenuList>
+                          {visits.map((href) => (
+                            <MenuItem key={href} itemId={href}>
+                              {urlMenuItem(href)}
+                            </MenuItem>
+                          ))}
+                        </MenuList>
+                      </MenuContent>
+                    </Menu>
+                  </div>
+                )}
+              </div>
+            </form>
+          </ToolbarItem>
           <ToolbarItem>
             <Button
-              variant="primary"
-              type="button"
-              isLoading={auditLoading}
-              onClick={handleAudit}
-              data-tour="browser-audit"
+              variant="plain"
+              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+              icon={isBookmarked ? <StarIcon /> : <OutlinedStarIcon />}
+              isDisabled={!previewUrl}
+              onClick={handleToggleFavorite}
+            />
+          </ToolbarItem>
+          <ToolbarItem className="ai11y-toolbar-audit" data-tour="browser-audit">
+            <Dropdown
+              isOpen={auditMenuOpen}
+              onOpenChange={setAuditMenuOpen}
+              popperProps={{
+                position: "right",
+                preventOverflow: true,
+              }}
+              onSelect={(_event, value) => {
+                if (typeof value === "string") {
+                  navigateToUrl(value);
+                }
+              }}
+              toggle={(toggleRef) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  variant="primary"
+                  isExpanded={auditMenuOpen}
+                  isDisabled={!hasSavedUrls}
+                  aria-label="Visit history"
+                  onClick={() => {
+                    if (!hasSavedUrls) return;
+                    setAuditMenuOpen((open) => !open);
+                  }}
+                  splitButtonItems={[
+                    <MenuToggleAction
+                      key="audit"
+                      isDisabled={auditLoading}
+                      onClick={handleAudit}
+                    >
+                      {auditLoading ? "Auditing…" : "Audit"}
+                    </MenuToggleAction>,
+                  ]}
+                >
+                  <HistoryIcon />
+                </MenuToggle>
+              )}
             >
-              Audit
-            </Button>
+              {favorites.length > 0 && (
+                <DropdownGroup label="Favorites">
+                  <DropdownList>
+                    {favorites.map((href) => (
+                      <DropdownItem
+                        key={`fav-${href}`}
+                        value={href}
+                        icon={<StarIcon />}
+                      >
+                        {urlMenuItem(href)}
+                      </DropdownItem>
+                    ))}
+                  </DropdownList>
+                </DropdownGroup>
+              )}
+              <DropdownGroup label="History">
+                <DropdownList>
+                  {visits.length > 0 ? (
+                    visits.map((href) => (
+                      <DropdownItem
+                        key={`hist-${href}`}
+                        value={href}
+                        icon={<HistoryIcon />}
+                      >
+                        {urlMenuItem(href)}
+                      </DropdownItem>
+                    ))
+                  ) : (
+                    <DropdownItem isDisabled>No sites yet</DropdownItem>
+                  )}
+                </DropdownList>
+              </DropdownGroup>
+            </Dropdown>
           </ToolbarItem>
         </ToolbarContent>
       </Toolbar>
