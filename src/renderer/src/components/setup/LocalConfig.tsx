@@ -29,7 +29,7 @@ export function LocalConfig({ settings, onChange }: LocalConfigProps) {
           id="local-model"
           value={local.modelName}
           onChange={(_e, value) => update({ modelName: value })}
-          placeholder="Ollama/llama3.2:1b"
+          placeholder="llama3.2:1b"
         />
       </FormGroup>
     </Form>

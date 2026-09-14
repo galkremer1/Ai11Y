@@ -1,73 +1,132 @@
-import { useState } from 'react'
-import { TreeView, type TreeViewDataItem } from '@patternfly/react-core'
-import FolderIcon from '@patternfly/react-icons/dist/esm/icons/folder-icon'
-import FolderOpenIcon from '@patternfly/react-icons/dist/esm/icons/folder-open-icon'
+import { useState, useEffect, useMemo } from "react";
+import {
+  TreeView,
+  type TreeViewDataItem,
+  Spinner,
+  EmptyState,
+  EmptyStateBody,
+} from "@patternfly/react-core";
+import FolderIcon from "@patternfly/react-icons/dist/esm/icons/folder-icon";
+import FolderOpenIcon from "@patternfly/react-icons/dist/esm/icons/folder-open-icon";
+import type { FileTreeNode } from "@shared/schemas/filesystem.schemas";
 
-interface TreeNode {
-  name: string
-  type: 'file' | 'directory'
-  children?: TreeNode[]
+interface FileTreeProps {
+  root: FileTreeNode | null;
+  loading?: boolean;
+  selectedFilePath?: string | null;
+  onFileSelect?: (filePath: string) => void;
 }
 
-const mockTree: TreeNode[] = [
-  {
-    name: 'src',
-    type: 'directory',
-    children: [
-      {
-        name: 'components',
-        type: 'directory',
-        children: [
-          { name: 'LoginForm.tsx', type: 'file' },
-          { name: 'NavBar.tsx', type: 'file' },
-          { name: 'ImageCard.tsx', type: 'file' },
-          { name: 'Modal.tsx', type: 'file' }
-        ]
-      },
-      { name: 'App.tsx', type: 'file' },
-      { name: 'index.tsx', type: 'file' }
-    ]
-  },
-  { name: 'package.json', type: 'file' }
-]
-
-function toTreeViewData(nodes: TreeNode[], parentKey = ''): TreeViewDataItem[] {
+function toTreeViewData(
+  nodes: FileTreeNode[],
+  parentKey = "",
+): TreeViewDataItem[] {
   return nodes.map((node) => {
-    const key = `${parentKey}/${node.name}`
+    const key = node.path || `${parentKey}/${node.name}`;
     const item: TreeViewDataItem = {
       name: node.name,
-      id: key
-    }
-    if (node.type === 'directory') {
-      item.icon = <FolderIcon />
-      item.expandedIcon = <FolderOpenIcon />
-      if (node.children) {
-        item.children = toTreeViewData(node.children, key)
+      id: key,
+    };
+
+    if (node.type === "directory") {
+      item.icon = <FolderIcon />;
+      item.expandedIcon = <FolderOpenIcon />;
+      if (node.children?.length) {
+        item.children = toTreeViewData(node.children, key);
       }
-      item.defaultExpanded = true
+      item.defaultExpanded = true;
     }
-    return item
-  })
+
+    return item;
+  });
 }
 
-const treeData = toTreeViewData(mockTree)
-
-function findItemPath(items: TreeViewDataItem[], targetId: string): TreeViewDataItem[] {
+function findItemPath(
+  items: TreeViewDataItem[],
+  targetId: string,
+): TreeViewDataItem[] {
   for (const item of items) {
-    if (item.id === targetId) return [item]
+    if (item.id === targetId) return [item];
     if (item.children) {
-      const childPath = findItemPath(item.children, targetId)
-      if (childPath.length) return [item, ...childPath]
+      const childPath = findItemPath(item.children, targetId);
+      if (childPath.length) return [item, ...childPath];
     }
   }
-  return []
+  return [];
 }
 
-export function FileTree() {
-  const [activeItems, setActiveItems] = useState<TreeViewDataItem[]>([])
+function findNodeByPath(
+  node: FileTreeNode,
+  filePath: string,
+): FileTreeNode | null {
+  if (node.path === filePath) return node;
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeByPath(child, filePath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function FileTree({
+  root,
+  loading = false,
+  selectedFilePath,
+  onFileSelect,
+}: FileTreeProps) {
+  const treeData = useMemo(
+    () => (root?.children ? toTreeViewData(root.children) : []),
+    [root],
+  );
+  const [activeItems, setActiveItems] = useState<TreeViewDataItem[]>([]);
+
+  useEffect(() => {
+    if (!selectedFilePath || !root) return;
+    const node = findNodeByPath(root, selectedFilePath);
+    if (node?.type !== "file") return;
+    const path = findItemPath(treeData, selectedFilePath);
+    if (path.length) setActiveItems(path);
+  }, [selectedFilePath, root, treeData]);
 
   const handleSelect = (_event: React.MouseEvent, item: TreeViewDataItem) => {
-    setActiveItems(findItemPath(treeData, item.id!))
+    if (!item.id || !root) return;
+
+    const node = findNodeByPath(root, item.id);
+    if (node?.type !== "file") return;
+
+    setActiveItems(findItemPath(treeData, item.id));
+    onFileSelect?.(item.id);
+  };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "var(--pf-t--global--spacer--lg)",
+        }}
+      >
+        <Spinner size="lg" aria-label="Loading file tree" />
+      </div>
+    );
+  }
+
+  if (!root) {
+    return (
+      <EmptyState>
+        <EmptyStateBody>Select a directory to browse project files.</EmptyStateBody>
+      </EmptyState>
+    );
+  }
+
+  if (!treeData.length) {
+    return (
+      <EmptyState>
+        <EmptyStateBody>No files found in this directory.</EmptyStateBody>
+      </EmptyState>
+    );
   }
 
   return (
@@ -77,5 +136,5 @@ export function FileTree() {
       onSelect={handleSelect}
       aria-label="Project files"
     />
-  )
+  );
 }
