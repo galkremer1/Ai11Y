@@ -124,3 +124,13 @@
   height: 100%;
   border: none;
 }
+
+/* Screen reader announcement bar — sits below the empathy viewer */
+.ai11y-screen-reader-bar {
+  flex-shrink: 0;
+  padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  background-color: var(--pf-t--global--background--color--primary--default);
+  color: var(--pf-t--global--text--color--regular);
+  font-size: var(--pf-t--global--font--size--sm);
+  border-top: 1px solid var(--pf-t--global--border--color--default);
+}

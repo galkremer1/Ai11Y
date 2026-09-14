@@ -16,6 +16,7 @@ import {
 } from "./filesystem";
 import { runEslintAudit } from "./mastra/tools/eslint-tool";
 import { analyzeCodeWithAgent } from "./ai-analysis";
+import screenReaderScript from "./screen-reader-inject.js?raw";
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(IpcChannels.SETTINGS_GET, () => {
@@ -120,5 +121,18 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IpcChannels.AXE_AUDIT, async (_event, _request) => {
     return { ok: false, error: "Axe audit not yet implemented" };
+  });
+
+  // Screen Reader — inject focus-listener into the audited page's iframe
+  ipcMain.handle(IpcChannels.SCREEN_READER_INJECT, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+
+    const mainFrame = win.webContents.mainFrame;
+    for (const frame of mainFrame.frames) {
+      if (frame.url.startsWith("http")) {
+        await frame.executeJavaScript(screenReaderScript);
+      }
+    }
   });
 }
